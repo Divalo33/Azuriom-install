@@ -1,26 +1,5 @@
 #!/bin/bash
 #
-# [Automatic installation on Linux for Azuriom]
-#
-# GitHub : https://github.com/MaximeMichaud/Azuriom-install
-# URL : https://azuriom.com
-#
-# This script is intended for a quick and easy installation :
-# bash <(curl -s https://raw.githubusercontent.com/MaximeMichaud/Azuriom-install/master/azuriom-install.sh)
-#
-# Azuriom-install Copyright (c) 2020-2022 Maxime Michaud
-# Licensed under MIT License
-#
-#   Permission is hereby granted, free of charge, to any person obtaining a copy
-#   of this software and associated documentation files (the "Software"), to deal
-#   in the Software without restriction, including without limitation the rights
-#   to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-#   copies of the Software, and to permit persons to whom the Software is
-#   furnished to do so, subject to the following conditions:
-#
-#   The above copyright notice and this permission notice shall be included in all
-#   copies or substantial portions of the Software.
-#
 #################################################################################
 #Colors
 red=$(tput setaf 1)
