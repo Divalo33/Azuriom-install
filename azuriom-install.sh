@@ -382,9 +382,16 @@ function aptinstall_phpmyadmin() {
   if [[ "$OS" =~ (debian|ubuntu) ]]; then
     PHPMYADMIN_VER=$(curl -s "https://api.github.com/repos/phpmyadmin/phpmyadmin/releases/latest" | grep -m1 '^[[:blank:]]*"name":' | cut -d \" -f 4)
     mkdir -p /usr/share/phpmyadmin/ || exit
-    wget https://files.phpmyadmin.net/phpMyAdmin/5.2.0-rc1/phpMyAdmin-5.2.0-rc1-all-languages.zip -O /usr/share/phpmyadmin/phpMyAdmin-5.2.0-rc1-all-languages.zip
-    unzip /usr/share/phpmyadmin/phpMyAdmin-5.2.0-rc1-all-languages.zip
-    rm -f /usr/share/phpmyadmin/phpMyAdmin-5.2.0-rc1-all-languages.zip
+    wget https://files.phpmyadmin.net/phpMyAdmin/5.1.2/phpMyAdmin-5.1.2-all-languages.tar.gz -O /usr/share/phpmyadmin/phpMyAdmin-5.1.2-all-languages.tar.gz
+    tar xzf /usr/share/phpmyadmin/phpMyAdmin-5.1.2-all-languages.tar.gz --strip-components=1 --directory /usr/share/phpmyadmin
+    rm -f /usr/share/phpmyadmin/phpMyAdmin-5.1.2-all-languages.tar.gz
+    # Create phpMyAdmin TempDir
+    mkdir -p /usr/share/phpmyadmin/tmp || exit
+    chown www-data:www-data /usr/share/phpmyadmin/tmp
+    chmod 700 /usr/share/phpmyadmin/tmp
+    randomBlowfishSecret=$(openssl rand -base64 32)
+    sed -e "s|cfg\['blowfish_secret'\] = ''|cfg['blowfish_secret'] = '$randomBlowfishSecret'|" /usr/share/phpmyadmin/config.sample.inc.php >/usr/share/phpmyadmin/config.inc.php
+    ln -s /usr/share/phpmyadmin /var/www/phpmyadmin
     if [[ "$webserver" =~ (apache2) ]]; then
       wget -O /etc/apache2/sites-available/phpmyadmin.conf https://raw.githubusercontent.com/MaximeMichaud/Azuriom-install/master/conf/apache2/phpmyadmin.conf
       a2ensite phpmyadmin
