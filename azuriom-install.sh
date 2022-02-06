@@ -381,7 +381,7 @@ function aptinstall_phpmyadmin() {
     PHPMYADMIN_VER=$(curl -s "https://api.github.com/repos/phpmyadmin/phpmyadmin/releases/latest" | grep -m1 '^[[:blank:]]*"name":' | cut -d \" -f 4)
     mkdir -p /usr/share/phpmyadmin/ || exit
     wget https://files.phpmyadmin.net/phpMyAdmin/5.2.0-rc1/phpMyAdmin-5.2.0-rc1-all-languages.zip -O /usr/share/phpmyadmin/phpMyAdmin-5.2.0-rc1-all-languages.zip
-    unzip /usr/share/phpmyadmin/phpMyAdmin-5.2.0-rc1-all-languages.zip --strip-components=1 --directory /usr/share/phpmyadmin
+    unzip /usr/share/phpmyadmin/phpMyAdmin-5.2.0-rc1-all-languages.zip
     rm -f /usr/share/phpmyadmin/phpMyAdmin-5.2.0-rc1-all-languages.zip
     # Create phpMyAdmin TempDir
     mkdir -p /usr/share/phpmyadmin/tmp || exit
