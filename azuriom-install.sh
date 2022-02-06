@@ -391,10 +391,6 @@ function aptinstall_phpmyadmin() {
     chmod 700 /usr/share/phpmyadmin/tmp
     randomBlowfishSecret=$(openssl rand -base64 32)
     ln -s /usr/share/phpmyadmin /var/www/phpmyadmin
-	if [[ "$webserver" =~ (nginx) ]]; then
-      apt-get update && apt-get install php8.0{,-bcmath,-mbstring,-common,-xml,-curl,-gd,-zip,-mysql,-fpm} -y
-      service nginx restart
-	fi
     if [[ "$webserver" =~ (apache2) ]]; then
       wget -O /etc/apache2/sites-available/phpmyadmin.conf https://raw.githubusercontent.com/MaximeMichaud/Azuriom-install/master/conf/apache2/phpmyadmin.conf
       a2ensite phpmyadmin
