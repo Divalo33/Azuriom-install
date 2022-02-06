@@ -1,5 +1,26 @@
 #!/bin/bash
 #
+# [Automatic installation on Linux for Azuriom]
+#
+# GitHub : https://github.com/MaximeMichaud/Azuriom-install
+# URL : https://azuriom.com
+#
+# This script is intended for a quick and easy installation :
+# bash <(curl -s https://raw.githubusercontent.com/MaximeMichaud/Azuriom-install/master/azuriom-install.sh)
+#
+# Azuriom-install Copyright (c) 2020-2022 Maxime Michaud
+# Licensed under MIT License
+#
+#   Permission is hereby granted, free of charge, to any person obtaining a copy
+#   of this software and associated documentation files (the "Software"), to deal
+#   in the Software without restriction, including without limitation the rights
+#   to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+#   copies of the Software, and to permit persons to whom the Software is
+#   furnished to do so, subject to the following conditions:
+#
+#   The above copyright notice and this permission notice shall be included in all
+#   copies or substantial portions of the Software.
+#
 #################################################################################
 #Colors
 red=$(tput setaf 1)
@@ -86,6 +107,7 @@ function script() {
   aptinstall_php
   aptinstall_"$webserver"
   aptinstall_"$database"
+  aptinstall_phpmyadmin
   install_composer
   install_azuriom
   autoUpdate
@@ -335,7 +357,7 @@ function aptinstall_php() {
         sed -i 's|upload_max_filesize = 2M|upload_max_filesize = 50M|' /etc/php/$PHP/apache2/php.ini
         sed -i 's|post_max_size = 8M|post_max_size = 50M|' /etc/php/$PHP/apache2/php.ini
         sed -i 's|;max_input_vars = 1000|max_input_vars = 2000|' /etc/php/$PHP/apache2/php.ini
-		sed -i 's|memory_limit = 128M|memory_limit = 256M|' /etc/php/$PHP/fpm/php.ini
+	sed -i 's|memory_limit = 128M|memory_limit = 256M|' /etc/php/$PHP/fpm/php.ini
         service php$PHP-fpm restart
         systemctl restart apache2
       fi
@@ -345,11 +367,40 @@ function aptinstall_php() {
         sed -i 's|upload_max_filesize = 2M|upload_max_filesize = 50M|' /etc/php/$PHP/apache2/php.ini
         sed -i 's|post_max_size = 8M|post_max_size = 50M|' /etc/php/$PHP/apache2/php.ini
         sed -i 's|;max_input_vars = 1000|max_input_vars = 2000|' /etc/php/$PHP/apache2/php.ini
-		sed -i 's|memory_limit = 128M|memory_limit = 256M|' /etc/php/$PHP/fpm/php.ini
+	sed -i 's|memory_limit = 128M|memory_limit = 256M|' /etc/php/$PHP/fpm/php.ini
         service php$PHP-fpm restart
         systemctl restart apache2
       fi
     fi
+  fi
+}
+
+function aptinstall_phpmyadmin() {
+  echo "phpMyAdmin Installation"
+  if [[ "$OS" =~ (debian|ubuntu) ]]; then
+    PHPMYADMIN_VER=$(curl -s "https://api.github.com/repos/phpmyadmin/phpmyadmin/releases/latest" | grep -m1 '^[[:blank:]]*"name":' | cut -d \" -f 4)
+    mkdir -p /usr/share/phpmyadmin/ || exit
+    wget https://files.phpmyadmin.net/phpMyAdmin/5.2.0-rc1/phpMyAdmin-5.2.0-rc1-all-languages.zip -O /usr/share/phpmyadmin/phpMyAdmin-5.2.0-rc1-all-languages.zip
+    unzip /usr/share/phpmyadmin/phpMyAdmin-5.2.0-rc1-all-languages.zip --strip-components=1 --directory /usr/share/phpmyadmin
+    rm -f /usr/share/phpmyadmin/phpMyAdmin-5.2.0-rc1-all-languages.zip
+    # Create phpMyAdmin TempDir
+    mkdir -p /usr/share/phpmyadmin/tmp || exit
+    chown www-data:www-data /usr/share/phpmyadmin/tmp
+    chmod 700 /usr/share/phpmyadmin/tmp
+    randomBlowfishSecret=$(openssl rand -base64 32)
+    sed -e "s|cfg\['blowfish_secret'\] = ''|cfg['blowfish_secret'] = '$randomBlowfishSecret'|" /usr/share/phpmyadmin/config.sample.inc.php >/usr/share/phpmyadmin/config.inc.php
+    ln -s /usr/share/phpmyadmin /var/www/phpmyadmin
+	if [[ "$webserver" =~ (nginx) ]]; then
+      apt-get update && apt-get install php8.0{,-bcmath,-mbstring,-common,-xml,-curl,-gd,-zip,-mysql,-fpm} -y
+      service nginx restart
+	fi
+    if [[ "$webserver" =~ (apache2) ]]; then
+      wget -O /etc/apache2/sites-available/phpmyadmin.conf https://raw.githubusercontent.com/MaximeMichaud/Azuriom-install/master/conf/apache2/phpmyadmin.conf
+      a2ensite phpmyadmin
+      systemctl restart apache2
+    fi
+  elif [[ "$OS" == "centos" ]]; then
+    echo "No Support"
   fi
 }
 
@@ -417,6 +468,7 @@ function setupdone() {
   IP=$(curl 'https://api.ipify.org')
   echo "${cyan}It done!"
   echo "${cyan}Configuration Database/User: ${red}http://$IP/index.php"
+  echo "${cyan}phpMyAdmin: ${red}http://$IP/phpmyadmin"
   echo "${cyan}For the moment, If you choose to use MariaDB, you will need to execute ${normal}${on_red}${white}mysql_secure_installation${normal}${cyan} for setting the password"
 }
 function manageMenu() {
@@ -428,8 +480,9 @@ function manageMenu() {
   echo ""
   echo "What do you want to do ?"
   echo "   1) Restart the installation"
-  echo "   2) Update the Script"
-  echo "   3) Quit"
+  echo "   2) Update phpMyAdmin"
+  echo "   4) Update the Script"
+  echo "   5) Quit"
   until [[ "$MENU_OPTION" =~ ^[1-5]$ ]]; do
     read -rp "Select an option [1-5] : " MENU_OPTION
   done
@@ -438,9 +491,12 @@ function manageMenu() {
     script
     ;;
   2)
-    update
+    updatephpMyAdmin
     ;;
   3)
+    update
+    ;;
+  4)
     exit 0
     ;;
   esac
@@ -454,6 +510,25 @@ function update() {
   sleep 2
   ./azuriom-install.sh
   exit
+}
+
+function updatephpMyAdmin() {
+  if [[ "$OS" =~ (debian|ubuntu) ]]; then
+    rm -rf /usr/share/phpmyadmin/*
+    cd /usr/share/phpmyadmin/ || exit
+    PHPMYADMIN_VER=$(curl -s "https://api.github.com/repos/phpmyadmin/phpmyadmin/releases/latest" | grep -m1 '^[[:blank:]]*"name":' | cut -d \" -f 4)
+    wget https://files.phpmyadmin.net/phpMyAdmin/"$PHPMYADMIN_VER"/phpMyAdmin-"$PHPMYADMIN_VER"-all-languages.tar.gz -O /usr/share/phpmyadmin/phpMyAdmin-"$PHPMYADMIN_VER"-all-languages.tar.gz
+    tar xzf /usr/share/phpmyadmin/phpMyAdmin-"$PHPMYADMIN_VER"-all-languages.tar.gz --strip-components=1 --directory /usr/share/phpmyadmin
+    rm -f /usr/share/phpmyadmin/phpMyAdmin-"$PHPMYADMIN_VER"-all-languages.tar.gz
+    # Create TempDir
+    mkdir /usr/share/phpmyadmin/tmp || exit
+    chown www-data:www-data /usr/share/phpmyadmin/tmp
+    chmod 700 /var/www/phpmyadmin/tmp
+    randomBlowfishSecret=$(openssl rand -base64 32)
+    sed -e "s|cfg\['blowfish_secret'\] = ''|cfg['blowfish_secret'] = '$randomBlowfishSecret'|" /usr/share/phpmyadmin/config.sample.inc.php >/usr/share/phpmyadmin/config.inc.php
+  elif [[ "$OS" == "centos" ]]; then
+    echo "No Support"
+  fi
 }
 
 initialCheck
