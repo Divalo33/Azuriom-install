@@ -385,12 +385,6 @@ function aptinstall_phpmyadmin() {
     wget https://files.phpmyadmin.net/phpMyAdmin/5.2.0-rc1/phpMyAdmin-5.2.0-rc1-all-languages.zip -O /usr/share/phpmyadmin/phpMyAdmin-5.2.0-rc1-all-languages.zip
     unzip /usr/share/phpmyadmin/phpMyAdmin-5.2.0-rc1-all-languages.zip
     rm -f /usr/share/phpmyadmin/phpMyAdmin-5.2.0-rc1-all-languages.zip
-    # Create phpMyAdmin TempDir
-    mkdir -p /usr/share/phpmyadmin/tmp || exit
-    chown www-data:www-data /usr/share/phpmyadmin/tmp
-    chmod 700 /usr/share/phpmyadmin/tmp
-    randomBlowfishSecret=$(openssl rand -base64 32)
-    ln -s /usr/share/phpmyadmin /var/www/phpmyadmin
     if [[ "$webserver" =~ (apache2) ]]; then
       wget -O /etc/apache2/sites-available/phpmyadmin.conf https://raw.githubusercontent.com/MaximeMichaud/Azuriom-install/master/conf/apache2/phpmyadmin.conf
       a2ensite phpmyadmin
